@@ -1,1 +1,3 @@
-﻿
+﻿  ConsoleApplication2.cpp
+c:\workspace\startosg\consoleapplication2\consoleapplication2\consoleapplication2.cpp(248): warning C4018: “<”: 有符号/无符号不匹配
+  ConsoleApplication2.vcxproj -> C:\workspace\startosg\ConsoleApplication2\x64\Debug\ConsoleApplication2.exe

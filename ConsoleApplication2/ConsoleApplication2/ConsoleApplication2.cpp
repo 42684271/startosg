@@ -10,6 +10,11 @@
 #include <osg/MatrixTransform>
 #include <osg/NodeVisitor>
 #include <osg/StateSet>
+#include <osg/Geode>
+#include <osg/Geometry>
+#include <osg/LineWidth>
+#include <osg/Drawable>
+
 
 //using namespace std;
 
@@ -190,10 +195,15 @@ public:
 	{
 		_orbitRadius = orbitRadius;
 		_equatorRadius = equator;
-
 		setUpdateCallback(new PlanetCB(0., _angularSpeedRevo, _orbitRadius, osg::Vec3(1.,1.,1.)));
+		osg::StateSet* state = getOrCreateStateSet();
+		state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+
 		_move = new osg::MatrixTransform;
 		_move->setUpdateCallback(new PlanetCB(_angularSpeedRot, 0, osg::Vec3(0., 0., 0.), _equatorRadius));
+		state = getOrCreateStateSet();
+		state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+
 		addChild(_move);
 	}
 
@@ -203,8 +213,83 @@ public:
 
 	//~Planet();
 
+	enum OrbitLevel
+	{
+		ORBIT_SIMPLE= 0,
+		ORBIT_DETAIL= 1,
+		ORBIT_DENSE = 2
+	} ;
+
+	void showOrbit(bool bVisible=true)
+	{
+		if (!_orbit.valid() && bVisible)
+		{
+			_orbit = new osg::Geode;
+			osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+
+			osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
+			
+			unsigned int orbitL = 360;
+			switch (_orbitLevel)
+			{
+			case Planet::ORBIT_SIMPLE:
+				orbitL = 360;
+				break;
+			case Planet::ORBIT_DETAIL:
+				orbitL = 540;
+				break;
+			case Planet::ORBIT_DENSE:
+				orbitL = 720;
+				break;
+			default:
+				break;
+			}
+
+			for (int i = 0; i < orbitL; i++)
+				v->push_back(osg::Vec3(_orbitRadius.length() * cos(osg::PI * 2 / orbitL)
+					, 0.
+					, _orbitRadius.length() * sin(osg::PI * 2 / orbitL)));
+			//osg::notify(osg::ALWAYS) << << std::endl;
+			geom->setVertexArray(v.get());
+
+			// color
+			osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
+			c->push_back(osg::Vec4(1., 0., 0., 1.));
+			geom->setColorArray(c.get());
+			geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+
+			// normal
+// 			osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
+// 			n->push_back(osg::Vec3(0,1,0));
+// 			geom->setNormalArray(n.get());
+
+			geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, orbitL));
+			
+			_orbit->addDrawable(geom);
+
+			// stateset
+			osg::StateSet* stateset = new osg::StateSet;
+			osg::LineWidth* linewidth = new osg::LineWidth();
+			linewidth->setWidth(10.0f);
+			stateset->setAttributeAndModes(linewidth, osg::StateAttribute::ON);
+			stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+			geom->setStateSet(stateset);
+
+			addChild(_orbit);
+
+			return;
+		}
+
+		removeChild(_orbit);
+
+	}
+	
+
 private:
-	osg::ref_ptr<osg::MatrixTransform> _move;
+	osg::ref_ptr<osg::MatrixTransform>	_move;
+	osg::ref_ptr<osg::Geode>			_orbit;
+	OrbitLevel _orbitLevel;
+
 	double _angularSpeedRot;
 	double _angularSpeedRevo;
 
@@ -294,6 +379,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(mercury_orbitRadius, 0., 0.)
 		, osg::Vec3(mercury_radius, mercury_radius, mercury_radius));
 	mercury->setSphere(model);
+	mercury->showOrbit(true);
 	sun->addSubStar(mercury);
 
 
