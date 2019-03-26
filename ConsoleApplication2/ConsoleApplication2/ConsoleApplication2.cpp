@@ -16,121 +16,6 @@
 #include <osg/Drawable>
 
 
-//using namespace std;
-
-
-
-class SunCB : public osg::NodeCallback
-{
-public:
-
-	SunCB() : _angle( 0.0 ) {}
-	virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-	{
-		osg::MatrixTransform* mt = dynamic_cast<osg::MatrixTransform*>(node);
-
-		osg::Matrix m;
-		m.makeRotate(_angle, osg::Vec3(0., 1., 0.) );
-		mt->setMatrix(m);
-
-		_angle += 0.00125;
-
-		traverse(node, nv);
-	}
-
-protected:
-	double _angle;
-};
-
-class EarthCB : public osg::NodeCallback
-{
-public:
-
-	EarthCB() : _angleRotation(0.0), _angleRevolution(0.0) {}
-	virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
-	{
-		osg::MatrixTransform* mt = dynamic_cast<osg::MatrixTransform*>(node);
-		
-		osg::MatrixTransform* parent = dynamic_cast<osg::MatrixTransform*>( mt->getParent(0) );
-
-
-		osg::Matrix mtParent = parent->getMatrix();
-		
-		// -1
-		osg::Quat q = mtParent.getRotate();		
-		double aParent;
-		osg::Vec3 v;
-		q.getRotate(aParent, v);
-		osg::Matrix mRotRevParent;
-		mRotRevParent.makeRotate(-aParent, v);
-
-		// -2
-		//osg::Matrix m = osg::Matrix::inverse(mtParent);
-		osg::Matrix m = parent->getInverseMatrix();
-
-		osg::Matrix mT , mS, mR, mRevolution;
-		mT.makeTranslate(osg::Vec3(100. ,0. ,0.));
-		mS.makeScale(osg::Vec3(.5, .5, .5));
-		mR.makeRotate(_angleRotation, osg::Vec3(0., 1., 0.));
-		mRevolution.makeRotate(_angleRevolution, osg::Vec3(0., 1., 0.));
-
-
-		mt->setMatrix(mS * mR * mT * mRevolution * m);
-
-		//mt->setMatrix(m* mS * mR * mT * mRevolution);
-		//mt->setMatrix(mS * mR * mT * mRotRevParent);
-		//mt->setMatrix(mS * mR * mT);
-		//mt->setMatrix(mS * mR * mT * mRotRevParent * mRevolution);
-		//mt->setMatrix(mS * mR * mT * m * mRevolution);
-
-		_angleRotation += 0.005;
-		_angleRevolution += 0.0005;
-
-		traverse(node, nv);
-	}
-
-protected:
-	double _angleRotation, _angleRevolution;
-};
-
-osg::ref_ptr<osg::Node> createSceneGraph()
-{
-	osg::ref_ptr<osg::Node> model = osgDB::readNodeFile( "sphere-ems-yellow.3ds" );
-	if ( !model.valid() )
-	{
-		osg::notify(osg::FATAL) << "Open model file error!" << std::endl;
-		exit( 1 );
-	}
-
-	//model->
-
-	osg::StateSet* state = model->getOrCreateStateSet();
-	state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-
-	osg::ref_ptr<osg::MatrixTransform> mtSun = new osg::MatrixTransform;
-	mtSun->setUpdateCallback(new SunCB);
-	mtSun->addChild( model );
-
-// 	state = mtSun->getOrCreateStateSet();
-// 	state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-
-	osg::ref_ptr<osg::MatrixTransform> mtEarth = new osg::MatrixTransform;
-	//mtEarth->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
-	mtEarth->setUpdateCallback(new EarthCB);
-	mtEarth->addChild(model);
-
-// 	state = mtSun->getOrCreateStateSet();
-// 	state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
-
-	mtSun->addChild(mtEarth);
-
-	//return model.get();
-	return mtSun.get();
-}
-
-
-
-
 
 class PlanetCB : public osg::NodeCallback
 {
@@ -220,15 +105,15 @@ public:
 		ORBIT_DENSE = 2
 	} ;
 
-	void showOrbit(bool bVisible=true)
+	void showOrbit(bool bVisible=true, osg::Vec4 color=osg::Vec4(1., .5, 0., 1.), Planet::OrbitLevel ol= ORBIT_SIMPLE )
 	{
+		_orbitLevel = ol;
 		if (!_orbit.valid() && bVisible)
 		{
 			_orbit = new osg::Geode;
 			osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
 
 			osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
-			
 			unsigned int orbitL = 360;
 			switch (_orbitLevel)
 			{
@@ -245,32 +130,32 @@ public:
 				break;
 			}
 
-			for (int i = 0; i < orbitL; i++)
-				v->push_back(osg::Vec3(_orbitRadius.length() * cos(osg::PI * 2 / orbitL)
+			for (unsigned i = 0; i < orbitL; i++)
+			{
+				v->push_back(osg::Vec3(_orbitRadius.length() * cos(osg::PI * 2 *i / orbitL)
 					, 0.
-					, _orbitRadius.length() * sin(osg::PI * 2 / orbitL)));
-			//osg::notify(osg::ALWAYS) << << std::endl;
+					, _orbitRadius.length() * sin(osg::PI * 2 * i / orbitL)) - _orbitRadius);
+			}
 			geom->setVertexArray(v.get());
 
 			// color
 			osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
-			c->push_back(osg::Vec4(1., 0., 0., 1.));
+			c->push_back(color);
 			geom->setColorArray(c.get());
 			geom->setColorBinding(osg::Geometry::BIND_OVERALL);
 
 			// normal
-// 			osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
-// 			n->push_back(osg::Vec3(0,1,0));
-// 			geom->setNormalArray(n.get());
-
-			geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, orbitL));
+			osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
+			n->push_back(osg::Vec3(0,1,0));
+			geom->setNormalArray(n.get());
+			geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINE_LOOP, 0, orbitL));
 			
 			_orbit->addDrawable(geom);
 
 			// stateset
 			osg::StateSet* stateset = new osg::StateSet;
 			osg::LineWidth* linewidth = new osg::LineWidth();
-			linewidth->setWidth(10.0f);
+			linewidth->setWidth(1.0f);
 			stateset->setAttributeAndModes(linewidth, osg::StateAttribute::ON);
 			stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 			geom->setStateSet(stateset);
@@ -311,7 +196,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	//factor - to adapt to frame update.
 	double dOrbitRadiusFactor	= 20.0;
 	double dEquatorRadiusFactor	= 1.0;
-	double dRotFactor		= 0.00005;
+	double dRotFactor		= 0.0005;
 	double dRevo	= 0.000005;
 
 	double sun_orbitRadius	= 0.00 *dOrbitRadiusFactor;
@@ -324,9 +209,9 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	double uranus_orbitRadius	= 7151.	*dOrbitRadiusFactor;
 	double neptune_orbitRadius	= 11716.*dOrbitRadiusFactor;
 	//double moon_orbitRadius		= 1.0	*dOrbitRadiusFactor;
-	double moon_orbitRadius = 10.0	*dOrbitRadiusFactor;
+	double moon_orbitRadius = 20.0	*dOrbitRadiusFactor;
 
-	//double sun_radius = 285.24 *dRadiusFactor;
+	//double sun_radius = 285.24 *dEquatorRadiusFactor;
 	double sun_radius = 28.524 *dEquatorRadiusFactor;
 	double mercury_radius	= 1.00 *dEquatorRadiusFactor;
 	double venus_radius		= 2.47 *dEquatorRadiusFactor;
@@ -363,14 +248,14 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 
 	// planet model
 	osg::StateSet* state = model->getOrCreateStateSet();
-	state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+	//state->setMode(GL_RESCALE_NORMAL, osg::StateAttribute::ON);
+	state->setMode(GL_NORMALIZE, osg::StateAttribute::ON);
 
 	// sun
 	//osg::ref_ptr<Planet> sun = new Planet(0., 0., osg::Vec3(0.,0.,0.), osg::Vec3(1., 1., 1.));
 	osg::ref_ptr<Planet> sun = new Planet(sun_rotation, sun_revolution
 		, osg::Vec3(sun_orbitRadius, 0., 0.)
 		, osg::Vec3(sun_radius, sun_radius, sun_radius));
-		//, osg::Vec3(mercury_orbitRadius, 0., 0.), osg::Vec3(mercury_radius, mercury_radius, mercury_radius));
 	sun->setSphere(model);
 
 
@@ -388,6 +273,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(venus_orbitRadius, 0., 0.)
 		, osg::Vec3(venus_radius, venus_radius, venus_radius));
 	venus->setSphere(model);
+	venus->showOrbit(true);
 	sun->addSubStar(venus);
 
 
@@ -395,19 +281,16 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(earth_orbitRadius, 0., 0.)
 		, osg::Vec3(earth_radius, earth_radius, earth_radius));
 	earth->setSphere(model);
+	earth->showOrbit(true);
 	sun->addSubStar(earth);
 
 	{
 		// moon
-// 		osg::ref_ptr<Planet> moon = new Planet(earth_rotation, earth_revolution
-// 			, osg::Vec3(moon_orbitRadius, 0., 0.)
-// 			, osg::Vec3(moon_radius, moon_radius, moon_radius));
-// 		moon->setSphere(model);
-//  		earth->addSubStar(moon);
 		osg::ref_ptr<Planet> moon = new Planet(moon_rotation, moon_revolution
 			, osg::Vec3(moon_orbitRadius, 0., 0.)
 			, osg::Vec3(moon_radius, moon_radius, moon_radius));
 		moon->setSphere(model);
+		moon->showOrbit(true);
 		earth->addSubStar(moon);
 
 	}
@@ -417,6 +300,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(mars_orbitRadius, 0., 0.)
 		, osg::Vec3(mars_radius, mars_radius, mars_radius));
 	mars->setSphere(model);
+	mars->showOrbit(true);
 	sun->addSubStar(mars);
 
 
@@ -425,6 +309,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(jupiter_orbitRadius, 0., 0.)
 		, osg::Vec3(jupiter_radius, jupiter_radius, jupiter_radius));
 	jupiter->setSphere(model);
+	jupiter->showOrbit(true);
 	sun->addSubStar(jupiter);
 
 
@@ -433,6 +318,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(saturn_orbitRadius, 0., 0.)
 		, osg::Vec3(saturn_radius, saturn_radius, saturn_radius));
 	saturn->setSphere(model);
+	saturn->showOrbit(true);
 	sun->addSubStar(saturn);
 
 	// uranus
@@ -440,6 +326,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(uranus_orbitRadius, 0., 0.)
 		, osg::Vec3(uranus_radius, uranus_radius, uranus_radius));
 	uranus->setSphere(model);
+	uranus->showOrbit(true);
 	sun->addSubStar(uranus);
 
 	// neptune
@@ -447,6 +334,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(neptune_orbitRadius, 0., 0.)
 		, osg::Vec3(neptune_radius, neptune_radius, neptune_radius));
 	neptune->setSphere(model);
+	neptune->showOrbit(true);
 	sun->addSubStar(neptune);
 
 	return sun.get();
