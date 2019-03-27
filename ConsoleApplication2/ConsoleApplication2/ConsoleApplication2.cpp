@@ -15,7 +15,84 @@
 #include <osg/LineWidth>
 #include <osg/Drawable>
 #include <osgDb/WriteFile>
+#include <osg/BoundingSphere>
+#include <osg/Point>
 
+
+#define random(x)			(rand()%x)
+#define random_range(a, b)	((rand() % (b - a)) + a)
+
+const int star_size_big		= 3;
+const int star_size_medium	= 2;
+const int star_size_small	= 1;
+const int star_layer_width = 1000;
+
+osg::ref_ptr<osg::Node> createStar(double dBase, unsigned int uCount, osg::Vec4Array* colors)
+{
+	osg::ref_ptr<osg::Geode> stars = new osg::Geode;
+	osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
+
+	osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
+	osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
+
+	geom->setVertexArray(v.get());
+	geom->setColorArray(c.get());
+
+	int alpha = 0, beta = 0;
+	double r = dBase + star_layer_width;
+
+	for (unsigned int b = 0; b < uCount; b++)
+	{
+		alpha = random_range(0, 360);
+		beta = random_range(0, 360);
+		double x = r * sin(alpha) * cos(beta);
+		double y = r * sin(alpha) * sin(beta);
+		double z = r * cos(alpha);
+
+		v->push_back(osg::Vec3(x, y, z));
+		c->push_back((*colors)[random_range(0, colors->size())]);
+		//c->push_back(osg::Vec4(1.,1.,1.,1.));
+	}
+	
+	geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, uCount));
+	geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+
+	osg::StateSet* stateset = geom->getOrCreateStateSet();
+	osg::Point* point = new osg::Point;
+	point->setSize(2.0);
+	stateset->setAttributeAndModes(point, osg::StateAttribute::ON);
+
+	stars->addDrawable(geom);
+
+	return stars.get();
+
+}
+
+
+osg::ref_ptr<osg::Node> createStars(double dBase
+	, unsigned int dAmountBig
+	, unsigned int dAmountMedium
+	, unsigned int dAmountSmall)
+{
+	osg::ref_ptr<osg::Node> stars = new osg::Group;
+
+	// big star
+	for (unsigned int b = 0; b<dAmountBig; b++)
+	{	
+	}
+
+	// medium star
+	for (unsigned int b = 0; b < dAmountMedium; b++)
+	{
+	}
+
+	// small star
+	for (unsigned int b = 0; b < dAmountSmall; b++)
+	{
+	}
+
+	return stars.get();
+}
 
 class PlanetCB : public osg::NodeCallback
 {
@@ -339,6 +416,13 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	neptune->setSphere(model);
 	neptune->showOrbit(true);
 	sun->addSubStar(neptune);
+
+	osg::BoundingSphere bs = sun->getBound();
+	osg::ref_ptr<osg::Vec4Array> colors = new osg::Vec4Array;
+	colors->push_back(osg::Vec4(1.,1.,1.,1.));
+	colors->push_back(osg::Vec4(.8,.8,.8,1.));
+
+	sun->addChild(createStar(bs.radius(), 10000, colors.get()));
 
 	return sun.get();
 }
