@@ -194,10 +194,10 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	}
 
 	//factor - to adapt to frame update.
-	double dOrbitRadiusFactor	= 20.0;
-	double dEquatorRadiusFactor	= 1.0;
-	double dRotFactor		= 0.0005;
-	double dRevo	= 0.000005;
+	double dOrbitRadiusFactor	= 600.0;
+	double dEquatorRadiusFactor	= 10.0;
+	double dRotFactor			= 0.0005;
+	double dRevoFactor			= 0.000005;
 
 	double sun_orbitRadius	= 0.00 *dOrbitRadiusFactor;
 	double mercury_orbitRadius	= 150.	*dOrbitRadiusFactor;
@@ -211,8 +211,8 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	//double moon_orbitRadius		= 1.0	*dOrbitRadiusFactor;
 	double moon_orbitRadius = 20.0	*dOrbitRadiusFactor;
 
-	//double sun_radius = 285.24 *dEquatorRadiusFactor;
-	double sun_radius = 28.524 *dEquatorRadiusFactor;
+	double sun_radius = 285.24 *dEquatorRadiusFactor;
+	//double sun_radius = 28.524 *dEquatorRadiusFactor;
 	double mercury_radius	= 1.00 *dEquatorRadiusFactor;
 	double venus_radius		= 2.47 *dEquatorRadiusFactor;
 	double earth_radius		= 2.58 *dEquatorRadiusFactor;
@@ -234,16 +234,16 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	double neptune_rotation		= 364.49*dRotFactor;
 	double moon_rotation		= 8.89  *dRotFactor;
 
-	double sun_revolution = 0.0 *dRevo;
-	double mercury_revolution	= 685.85 *dRevo;
-	double venus_revolution		= 268.48 *dRevo;
-	double earth_revolution		= 165.28 *dRevo;
-	double mars_revolution		= 87.81  *dRevo;
-	double jupiter_revolution	= 13.93  *dRevo;
-	double saturn_revolution	= 5.56   *dRevo;
-	double uranus_revolution	= 1.96   *dRevo;
-	double neptune_revolution	= 1.00   *dRevo;
-	double moon_revolution		= 92.00  *dRevo;
+	double sun_revolution = 0.0 *dRevoFactor;
+	double mercury_revolution	= 685.85 *dRevoFactor;
+	double venus_revolution		= 268.48 *dRevoFactor;
+	double earth_revolution		= 165.28 *dRevoFactor;
+	double mars_revolution		= 87.81  *dRevoFactor;
+	double jupiter_revolution	= 13.93  *dRevoFactor;
+	double saturn_revolution	= 5.56   *dRevoFactor;
+	double uranus_revolution	= 1.96   *dRevoFactor;
+	double neptune_revolution	= 1.00   *dRevoFactor;
+	double moon_revolution		= 92.00  *dRevoFactor;
 
 
 	// planet model
