@@ -14,7 +14,7 @@
 #include <osg/Geometry>
 #include <osg/LineWidth>
 #include <osg/Drawable>
-
+#include <osgDb/WriteFile>
 
 
 class PlanetCB : public osg::NodeCallback
@@ -186,7 +186,9 @@ private:
 osg::ref_ptr<osg::Node> createSceneGraph1()
 {
 
-	osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("sphere-ems-yellow.3ds");
+	//osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("sphere-ems-yellow.3ds");
+	//osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("sphere-material.3ds");
+	osg::ref_ptr<osg::Node> model = osgDB::readNodeFile("sphere-material-2.3ds");
 	if (!model.valid())
 	{
 		osg::notify(osg::FATAL) << "Open model file error!" << std::endl;
@@ -211,8 +213,8 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	//double moon_orbitRadius		= 1.0	*dOrbitRadiusFactor;
 	double moon_orbitRadius = 20.0	*dOrbitRadiusFactor;
 
-	double sun_radius = 285.24 *dEquatorRadiusFactor;
-	//double sun_radius = 28.524 *dEquatorRadiusFactor;
+	//double sun_radius = 285.24 *dEquatorRadiusFactor;
+	double sun_radius = 285.24 *dEquatorRadiusFactor *0.5;
 	double mercury_radius	= 1.00 *dEquatorRadiusFactor;
 	double venus_radius		= 2.47 *dEquatorRadiusFactor;
 	double earth_radius		= 2.58 *dEquatorRadiusFactor;
@@ -257,7 +259,8 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, osg::Vec3(sun_orbitRadius, 0., 0.)
 		, osg::Vec3(sun_radius, sun_radius, sun_radius));
 	sun->setSphere(model);
-
+	//osg::StateSet* sunStates = sun->getOrCreateStateSet();
+	//sunStates->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 
 	// mercury
 	osg::ref_ptr<Planet> mercury = new Planet(mercury_rotation, mercury_revolution
@@ -343,10 +346,16 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 int main()
 {
 
-	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
+	
 
-	viewer->setSceneData(createSceneGraph1().get());
+	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
+	
+	osg::ref_ptr<osg::Node> root = createSceneGraph1();
+	viewer->setSceneData( root.get() );
+	viewer->getCamera()->setClearColor(osg::Vec4(0., 0., 0., 1.));
 
 	viewer->run();
+
+	osgDB::writeNodeFile(*root, "C:\\workspace\\OpenSceneGraph-Data\\planet.osg");
 
 };
