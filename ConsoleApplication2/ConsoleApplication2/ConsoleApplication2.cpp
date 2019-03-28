@@ -22,44 +22,65 @@
 #define random(x)			(rand()%x)
 #define random_range(a, b)	((rand() % (b - a)) + a)
 
-const int star_size_big		= 3;
-const int star_size_medium	= 2;
-const int star_size_small	= 1;
-const int star_layer_width = 1000;
+const float star_size_big		= 3.;
+const float star_size_medium	= 2.;
+const float star_size_small		= 1;
+const int star_layer_width	= 1000;
 
-osg::ref_ptr<osg::Node> createStar(double dBase, unsigned int uCount, osg::Vec4Array* colors)
+osg::ref_ptr<osg::Node> createStar(double dBase
+	, unsigned int uCount
+	, osg::Vec4Array* colors
+	, float fStarSize)
 {
 	osg::ref_ptr<osg::Geode> stars = new osg::Geode;
 	osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
 
 	osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
 	osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
+	osg::ref_ptr<osg::Vec3Array> n = new osg::Vec3Array;
 
 	geom->setVertexArray(v.get());
 	geom->setColorArray(c.get());
 
-	int alpha = 0, beta = 0;
+	//double alpha = 0., beta = 0.;
+	double alpha = 0., beta = 0., thelta = 0.;
 	double r = dBase + star_layer_width;
 
 	for (unsigned int b = 0; b < uCount; b++)
 	{
-		alpha = random_range(0, 360);
-		beta = random_range(0, 360);
-		double x = r * sin(alpha) * cos(beta);
-		double y = r * sin(alpha) * sin(beta);
-		double z = r * cos(alpha);
+		///*
+// 		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
+// 		beta = random_range(0, 3600) * osg::PI * 2. / 360. ;
+// 		double x = r * sin(alpha) * cos(beta);
+// 		double y = r * sin(alpha) * sin(beta);
+// 		double z = r * cos(alpha);
+		//*/
+		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
+		beta = random_range(0, 3600) * osg::PI * 2. / 360.;
+		thelta = random_range(0, 3600) * osg::PI * 2. / 360.;
+
+		double x = r * sin(alpha);
+		double y = r * sin(beta);
+		double z = r * sin(thelta);
 
 		v->push_back(osg::Vec3(x, y, z));
+
+		osg::Vec3 norm = osg::Vec3(x, y, z);
+		norm.normalize();
+
+		n->push_back(-norm);
 		c->push_back((*colors)[random_range(0, colors->size())]);
 		//c->push_back(osg::Vec4(1.,1.,1.,1.));
 	}
 	
 	geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, uCount));
 	geom->setColorBinding(osg::Geometry::BIND_PER_VERTEX);
+	geom->setNormalArray(n);
+	geom->setNormalBinding(osg::Geometry::BIND_PER_VERTEX);
 
 	osg::StateSet* stateset = geom->getOrCreateStateSet();
 	osg::Point* point = new osg::Point;
-	point->setSize(2.0);
+	point->setSize(fStarSize);
 	stateset->setAttributeAndModes(point, osg::StateAttribute::ON);
 
 	stars->addDrawable(geom);
@@ -422,7 +443,9 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	colors->push_back(osg::Vec4(1.,1.,1.,1.));
 	colors->push_back(osg::Vec4(.8,.8,.8,1.));
 
-	sun->addChild(createStar(bs.radius(), 10000, colors.get()));
+	sun->addChild(createStar(bs.radius(), 8000, colors.get(), star_size_small));
+	sun->addChild(createStar(bs.radius(), 1000, colors.get(), star_size_medium));
+	sun->addChild(createStar(bs.radius(), 800, colors.get(), star_size_big));
 
 	return sun.get();
 }
