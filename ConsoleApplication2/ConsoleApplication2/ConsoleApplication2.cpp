@@ -22,6 +22,75 @@
 #define random(x)			(rand()%x)
 #define random_range(a, b)	((rand() % (b - a)) + a)
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+class MeteorCB : public osg::NodeCallback
+{
+public:
+	MeteorCB() {};
+
+	virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+	{
+
+		traverse(node, nv);
+	}
+
+
+private:
+
+};
+
+
+
+class Meteor : public osg::Node
+{
+public:
+	Meteor(): _velocity(osg::Vec3(10.,10.,10.))
+			,_initialPosition(osg::Vec3(0.,0.,0))
+			,_lifetime(1024)
+			,_headsize(2.)
+			,_bodysize(10.){};
+
+	Meteor(osg::Vec3 velocity, osg::Vec3 position
+		, unsigned int lifetime
+		, float headsize
+		, float bodysize)
+	{
+		_velocity = velocity;
+		_initialPosition = position;
+		_lifetime = lifetime;
+		_headsize = headsize;
+		_bodysize = bodysize;
+
+		osg::ref_ptr < osg::Geode > n= new osg::Geode;
+		osg::ref_ptr<osg::Geometry> geom= new osg::Geometry;
+
+		osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
+		osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
+		osg::ref_ptr<osg::Vec3Array> norm = new osg::Vec3Array;
+
+
+
+		setUpdateCallback(new MeteorCB);
+
+
+	}
+
+
+private:
+
+	osg::Vec3 _velocity;
+	osg::Vec3 _initialPosition;
+	unsigned int _lifetime;
+	float _headsize;
+	float _bodysize;
+
+
+};
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 const float star_size_big		= 3.;
 const float star_size_medium	= 2.;
 const float star_size_small		= 1;
@@ -49,19 +118,19 @@ osg::ref_ptr<osg::Node> createStar(double dBase
 	for (unsigned int b = 0; b < uCount; b++)
 	{
 		///*
-// 		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
-// 		beta = random_range(0, 3600) * osg::PI * 2. / 360. ;
-// 		double x = r * sin(alpha) * cos(beta);
-// 		double y = r * sin(alpha) * sin(beta);
-// 		double z = r * cos(alpha);
+		alpha = random_range(0, 36000) * 0.01 * osg::PI * 2. / 360.;
+		beta = random_range(0, 36000) * 0.01 * osg::PI * 2. / 360. ;
+		double x = r * sin(alpha) * cos(beta);
+		double y = r * sin(alpha) * sin(beta);
+		double z = r * cos(alpha);
 		//*/
-		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
-		beta = random_range(0, 3600) * osg::PI * 2. / 360.;
-		thelta = random_range(0, 3600) * osg::PI * 2. / 360.;
-
-		double x = r * sin(alpha);
-		double y = r * sin(beta);
-		double z = r * sin(thelta);
+// 		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
+// 		beta = random_range(0, 3600) * osg::PI * 2. / 360.;
+// 		thelta = random_range(0, 3600) * osg::PI * 2. / 360.;
+// 
+// 		double x = r * sin(alpha);
+// 		double y = r * sin(beta);
+// 		double z = r * sin(thelta);
 
 		v->push_back(osg::Vec3(x, y, z));
 
@@ -89,31 +158,6 @@ osg::ref_ptr<osg::Node> createStar(double dBase
 
 }
 
-
-osg::ref_ptr<osg::Node> createStars(double dBase
-	, unsigned int dAmountBig
-	, unsigned int dAmountMedium
-	, unsigned int dAmountSmall)
-{
-	osg::ref_ptr<osg::Node> stars = new osg::Group;
-
-	// big star
-	for (unsigned int b = 0; b<dAmountBig; b++)
-	{	
-	}
-
-	// medium star
-	for (unsigned int b = 0; b < dAmountMedium; b++)
-	{
-	}
-
-	// small star
-	for (unsigned int b = 0; b < dAmountSmall; b++)
-	{
-	}
-
-	return stars.get();
-}
 
 class PlanetCB : public osg::NodeCallback
 {
@@ -167,6 +211,9 @@ private:
 	double _revo;
 };
 
+
+// a typical planet could renovate, rotate and possibly has one or more satellite,
+// which could be a planet also.
 
 class Planet : public osg::MatrixTransform
 {
@@ -253,7 +300,7 @@ public:
 			// stateset
 			osg::StateSet* stateset = new osg::StateSet;
 			osg::LineWidth* linewidth = new osg::LineWidth();
-			linewidth->setWidth(1.0f);
+			linewidth->setWidth(.5f);
 			stateset->setAttributeAndModes(linewidth, osg::StateAttribute::ON);
 			stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
 			geom->setStateSet(stateset);
@@ -445,7 +492,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 
 	sun->addChild(createStar(bs.radius(), 8000, colors.get(), star_size_small));
 	sun->addChild(createStar(bs.radius(), 1000, colors.get(), star_size_medium));
-	sun->addChild(createStar(bs.radius(), 800, colors.get(), star_size_big));
+	sun->addChild(createStar(bs.radius(), 400, colors.get(), star_size_big));
 
 	return sun.get();
 }
