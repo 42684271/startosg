@@ -26,29 +26,46 @@
 class MeteorCB : public osg::NodeCallback
 {
 public:
-	MeteorCB() {};
+	MeteorCB(unsigned int lifetime, osg::Vec3 velocity)
+		: _lifetime(lifetime), _velocity(velocity){};
 
 	virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
 	{
+		osg::MatrixTransform* mt = dynamic_cast<osg::MatrixTransform*> (node);
+
+		//osg::Vec3 translation;
+		//osg::Quat rotation;
+		//osg::Vec3 scale;
+		//osg::Quat so;
+
+		osg::Matrix m;
+		m.makeTranslate(_velocity);
+
+		if ( _lifetime > 0)
+		{
+			mt->postMult(m);
+		}
+		_lifetime--;
 
 		traverse(node, nv);
 	}
 
 
 private:
-
+	unsigned int _lifetime;
+	osg::Vec3 _velocity;
 };
 
 
 
-class Meteor : public osg::Node
+class Meteor : public osg::MatrixTransform
 {
 public:
-	Meteor(): _velocity(osg::Vec3(10.,10.,10.))
-			,_initialPosition(osg::Vec3(0.,0.,0))
-			,_lifetime(1024)
-			,_headsize(2.)
-			,_bodysize(10.){};
+	Meteor() : _velocity(osg::Vec3(10., 10., 10.))
+		, _initialPosition(osg::Vec3(0., 0., 0))
+		, _lifetime(1024)
+		, _headsize(2.)
+		, _bodysize(10.) {};
 
 	Meteor(osg::Vec3 velocity, osg::Vec3 position
 		, unsigned int lifetime
@@ -61,20 +78,51 @@ public:
 		_headsize = headsize;
 		_bodysize = bodysize;
 
-		osg::ref_ptr < osg::Geode > n= new osg::Geode;
-		osg::ref_ptr<osg::Geometry> geom= new osg::Geometry;
+		osg::ref_ptr < osg::Geode > n = new osg::Geode;
+		osg::ref_ptr<osg::Geometry> geom = new osg::Geometry;
 
-		osg::ref_ptr<osg::Vec3Array> v = new osg::Vec3Array;
+		osg::ref_ptr<osg::Vec3Array> vhead = new osg::Vec3Array;
+		osg::ref_ptr<osg::Vec3Array> vbody = new osg::Vec3Array;
 		osg::ref_ptr<osg::Vec4Array> c = new osg::Vec4Array;
 		osg::ref_ptr<osg::Vec3Array> norm = new osg::Vec3Array;
 
+		osg::Vec3 pose = _velocity;
+		pose.normalize();
 
+		//vhead->push_back(position);
 
-		setUpdateCallback(new MeteorCB);
+		vbody->push_back(position);
+		vbody->push_back(osg::Vec3(position.x() + pose.x()* bodysize
+			, position.y() + pose.x() * bodysize
+			, position.z() + pose.z() * bodysize
+			)
+		);
 
+		geom->setVertexArray(vbody.get());
+		c->push_back(osg::Vec4(1., 1., 1., 1.));
+		geom->setColorArray(c.get());
+		geom->setColorBinding(osg::Geometry::BIND_OVERALL);
+
+		//geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::POINTS, 0, 1));
+		geom->addPrimitiveSet(new osg::DrawArrays(osg::PrimitiveSet::LINES, 0, 2));
+
+		osg::StateSet* stateset = new osg::StateSet;
+		osg::LineWidth* linewidth = new osg::LineWidth();
+		linewidth->setWidth(headsize);
+		stateset->setAttributeAndModes(linewidth, osg::StateAttribute::ON);
+		stateset->setMode(GL_LIGHTING, osg::StateAttribute::OFF);
+		geom->setStateSet(stateset);
+
+		setUpdateCallback(new MeteorCB(_lifetime, _velocity));
+
+		n->addDrawable(geom.get());
+		addChild(n);
 
 	}
 
+	const osg::Vec3 getVeloticy() const { return _velocity; }
+	const osg::Vec3 getInitialPosition() const { return _initialPosition; }
+	unsigned int getLifeTime() const { return _lifetime; }
 
 private:
 
@@ -86,8 +134,6 @@ private:
 
 
 };
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -124,6 +170,7 @@ osg::ref_ptr<osg::Node> createStar(double dBase
 		double y = r * sin(alpha) * sin(beta);
 		double z = r * cos(alpha);
 		//*/
+
 // 		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
 // 		beta = random_range(0, 3600) * osg::PI * 2. / 360.;
 // 		thelta = random_range(0, 3600) * osg::PI * 2. / 360.;
@@ -490,17 +537,24 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	colors->push_back(osg::Vec4(1.,1.,1.,1.));
 	colors->push_back(osg::Vec4(.8,.8,.8,1.));
 
-	sun->addChild(createStar(bs.radius(), 8000, colors.get(), star_size_small));
-	sun->addChild(createStar(bs.radius(), 1000, colors.get(), star_size_medium));
+	sun->addChild(createStar(bs.radius(), 10000, colors.get(), star_size_small));
+	sun->addChild(createStar(bs.radius(), 2000, colors.get(), star_size_medium));
 	sun->addChild(createStar(bs.radius(), 400, colors.get(), star_size_big));
+
+
+	sun->addChild(new Meteor(osg::Vec3(20000.,20000.,20000)
+		, osg::Vec3(100., 100., 100.)
+		, 100000
+		, 2
+		, 500000
+		)
+	);
 
 	return sun.get();
 }
 
 int main()
 {
-
-	
 
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
 	
@@ -510,6 +564,6 @@ int main()
 
 	viewer->run();
 
-	osgDB::writeNodeFile(*root, "C:\\workspace\\OpenSceneGraph-Data\\planet.osg");
+	//osgDB::writeNodeFile(*root, "C:\\workspace\\OpenSceneGraph-Data\\planet.osg");
 
 };
