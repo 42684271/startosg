@@ -18,6 +18,8 @@
 #include <osg/BoundingSphere>
 #include <osg/Point>
 
+#include <iostream>
+#include <ctime>
 
 #define random(x)			(rand()%x)
 #define random_range(a, b)	((rand() % (b - a)) + a)
@@ -41,11 +43,7 @@ public:
 		osg::Matrix m;
 		m.makeTranslate(_velocity);
 
-		if ( _lifetime > 0)
-		{
-			mt->postMult(m);
-		}
-		_lifetime--;
+		if ( _lifetime-- > 0) mt->postMult(m);
 
 		traverse(node, nv);
 	}
@@ -161,23 +159,16 @@ osg::ref_ptr<osg::Node> createStar(double dBase
 	double alpha = 0., beta = 0., thelta = 0.;
 	double r = dBase + star_layer_width;
 
+	srand(time(NULL));
 	for (unsigned int b = 0; b < uCount; b++)
 	{
-		///*
-		alpha = random_range(0, 36000) * 0.01 * osg::PI * 2. / 360.;
-		beta = random_range(0, 36000) * 0.01 * osg::PI * 2. / 360. ;
-		double x = r * sin(alpha) * cos(beta);
-		double y = r * sin(alpha) * sin(beta);
-		double z = r * cos(alpha);
-		//*/
+#define N 9999
+		alpha	= rand() % (N + 1) / (float)(N + 1) * osg::PI - osg::PI_2;
+		beta	= rand() % (N + 1) / (float)(N + 1) * osg::PI * 2. - osg::PI;
+		double x = r * cos(alpha) * cos(beta);
+		double y = r * cos(alpha) * sin(beta);
+		double z = r * sin(alpha);
 
-// 		alpha = random_range(0, 3600) * osg::PI * 2. / 360.;
-// 		beta = random_range(0, 3600) * osg::PI * 2. / 360.;
-// 		thelta = random_range(0, 3600) * osg::PI * 2. / 360.;
-// 
-// 		double x = r * sin(alpha);
-// 		double y = r * sin(beta);
-// 		double z = r * sin(thelta);
 
 		v->push_back(osg::Vec3(x, y, z));
 
@@ -542,7 +533,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	sun->addChild(createStar(bs.radius(), 400, colors.get(), star_size_big));
 
 
-	sun->addChild(new Meteor(osg::Vec3(20000.,20000.,20000)
+	sun->addChild(new Meteor(osg::Vec3(2000.,2000.,2000)
 		, osg::Vec3(100., 100., 100.)
 		, 100000
 		, 2
