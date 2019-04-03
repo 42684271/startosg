@@ -108,6 +108,35 @@ osg::ref_ptr<osg::Node> createSceneGraph()
 
 }
 
+class MyObjectCB : public osg::NodeCallback
+{
+public:
+	MyObjectCB() {}
+	virtual void operator()(osg::Node* node, osg::NodeVisitor* nv)
+	{
+		traverse(node, nv);
+	}
+protected:
+	virtual ~MyObjectCB() {}
+private:
+};
+
+class MyObject : public osg::MatrixTransform
+{
+public:
+	MyObject() 
+	{
+		
+	}
+
+protected:
+	virtual ~MyObject() {}
+
+private:
+
+
+};
+
 int main()
 {
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
