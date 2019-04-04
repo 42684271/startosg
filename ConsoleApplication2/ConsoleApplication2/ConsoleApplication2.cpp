@@ -570,11 +570,11 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 	colors->push_back(osg::Vec4(1.,1.,1.,1.));
 	colors->push_back(osg::Vec4(.8,.8,.8,1.));
 
-	sun->addChild(createStar(bs.radius(), 10000, colors.get(), star_size_small));
-	sun->addChild(createStar(bs.radius(), 2000, colors.get(), star_size_medium));
-	sun->addChild(createStar(bs.radius(), 400, colors.get(), star_size_big));
+	sun->addChild(createStar(bs.radius(), 20000, colors.get(), star_size_small));
+	sun->addChild(createStar(bs.radius(), 5000, colors.get(), star_size_medium));
+	sun->addChild(createStar(bs.radius(), 800, colors.get(), star_size_big));
 
-
+/*
 	sun->addChild(new Meteor(osg::Vec3(200.,200.,200)
 		, osg::Vec3(100., 100., 100.)
 		, 100000
@@ -582,7 +582,7 @@ osg::ref_ptr<osg::Node> createSceneGraph1()
 		, 500000
 		)
 	);
-
+*/
 	return sun.get();
 }
 
